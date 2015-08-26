@@ -507,7 +507,7 @@ module Yast
         else
           # Calculate the param values based on @allocated_memory
           crash_values = crash_kernel_values
-          remove_offsets!(crash_value) if Mode.update
+          remove_offsets!(crash_values) if Mode.update
           # Skip writing of param if it's already set to the desired values
           skip_crash_values = @crashkernel_param && @crashkernel_param_values == crash_values
         end
@@ -1138,7 +1138,7 @@ module Yast
       # If the current values include "nasty" things and the user has not
       # overriden the value of @crashkernel_list_ranges to autorize the
       # modification, return the old values (ensuring the Array format)
-      return Array(@crashkernel_param_values) if @crashkernel_list_ranges
+      return Array(@crashkernel_param_values.dup) if @crashkernel_list_ranges
 
       result = []
       high = @allocated_memory[:high]
@@ -1168,7 +1168,7 @@ module Yast
     def remove_offsets!(values)
       # It could also be :missing or :present
       if values.is_a?(Array)
-        crash_values.map! do |value|
+        values.map! do |value|
           pieces = value.split("@")
           if pieces.size > 1
             Builtins.y2milestone("Delete offset crashkernel value: %1", value)

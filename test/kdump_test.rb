@@ -569,6 +569,72 @@ describe Yast::Kdump do
           Yast::Kdump.WriteKdumpBootParameter
         end
       end
+
+      context "not modifying the current bootloader value" do
+        before do
+          allow(Yast::Bootloader).to receive(:Write)
+          allow(Yast::Service).to receive(:Enable).with("kdump")
+        end
+
+        context "if the value includes an offset" do
+          let(:kernel_param) { "64M@512" }
+
+          it "removes the range" do
+            expect(Yast::Bootloader)
+              .to receive(:modify_kernel_params)
+              .with(:common, :xen_guest, :recovery, {"crashkernel" => ["64M"]})
+            Yast::Kdump.WriteKdumpBootParameter
+          end
+        end
+
+        context "if the value includes several ranges and an offset" do
+          let(:kernel_param) { "-512M:64M,512M-:128M@1024" }
+
+          it "does not try to write a new value" do
+            expect(Yast::Bootloader).to_not receive(:modify_kernel_params)
+            Yast::Kdump.WriteKdumpBootParameter
+          end
+        end
+      end
+    end
+
+    context "during update" do
+      before do
+        Yast::Mode.SetMode("update")
+        allow(Yast::Popup).to receive(:Message)
+
+        allow(Yast::Bootloader).to receive(:kernel_param).and_return kernel_param
+        Yast::Kdump.ReadKdumpKernelParam
+      end
+
+      context "not modifying the current bootloader value" do
+        before do
+          allow(Yast::Bootloader).to receive(:Write)
+          allow(Yast::Service).to receive(:Enable).with("kdump")
+        end
+
+        context "if the value includes an offset" do
+          let(:kernel_param) { "64M@512" }
+
+          it "removes the range" do
+            expect(Yast::Bootloader)
+              .to receive(:modify_kernel_params)
+              .with(:common, :xen_guest, :recovery, {"crashkernel" => ["64M"]})
+            Yast::Kdump.WriteKdumpBootParameter
+          end
+        end
+
+        context "if the value includes several ranges and an offset" do
+          let(:kernel_param) { "-512M:64M,512M-:128M@1024" }
+
+          it "removes the range" do
+            expect(Yast::Bootloader)
+              .to receive(:modify_kernel_params)
+              .with(:common, :xen_guest, :recovery, {"crashkernel" => ["-512M:64M,512M-:128M"]})
+            Yast::Kdump.WriteKdumpBootParameter
+          end
+        end
+      end
     end
   end
 
